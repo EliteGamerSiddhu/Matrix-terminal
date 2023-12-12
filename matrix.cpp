@@ -30,7 +30,7 @@ void newBuffer(CHAR_INFO* buffer) {
 }
 
 //GENERATES A RANDOM OFFSET BASED ON THE MAXIMUM OFFSET
-int nOffset(){
+int nOffset() {
 	return (-1) * (rand() % MAX_OFFSET);
 }
 
@@ -39,12 +39,21 @@ int nLength() {
 	return rand() % MAX_LENGTH;
 }
 
-int main() {
+int terminal() {
 
 	//CREATING BUFFER AND HANDLE TO MODIFY	
-	HANDLE hHandle = CreateConsoleScreenBuffer(GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CONSOLE_TEXTMODE_BUFFER, NULL);
-	SetConsoleActiveScreenBuffer(hHandle);
-	CHAR_INFO* sBuffer = new CHAR_INFO[nScreenHeight * nScreenWidth];
+	HANDLE hHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+
+	CONSOLE_SCREEN_BUFFER_INFO sBufferInfo;
+
+	//CHANGING DIMENSIONS BASED ON THE CURRENT CONSOLE
+	GetConsoleScreenBufferInfo(hHandle, &sBufferInfo);
+	nScreenWidth = sBufferInfo.dwSize.X;
+	nScreenHeight = sBufferInfo.dwSize.Y;
+
+	//CREATING POINTERS TO CHAR_INFO
+	CHAR_INFO* sBuffer = nullptr;
+	sBuffer = new CHAR_INFO[nScreenWidth * nScreenHeight];
 	newBuffer(sBuffer);
 
 	//OFFSET AND LENGTH ARRAY AND INITIALIZING IT
@@ -60,15 +69,18 @@ int main() {
 
 	srand((unsigned int)time(0)); //SETS SEED SO THAT WE DON'T GET SAME RANDOM VALUE
 
-	newBuffer(sBuffer); //INITIALIZING NEW BUFFER
-
 	bool qConsole = false;
 	while (!qConsole) {
+		//CHECKS IF CONSOLE SIZE HAS BEEN CHANGED
+		GetConsoleScreenBufferInfo(hHandle, &sBufferInfo);
+		if (sBufferInfo.dwSize.X != nScreenWidth || sBufferInfo.dwSize.Y != nScreenHeight) {
+			break;
+		}
 
 		//CHECKS IF THE UPPER AND LOWER CELL ARE SAME AND PROPOGATES COLOUR
 		for (int i = 0; i < nScreenWidth; i++) {
-			for (int j = nScreenHeight - 1; j > 0; j--) {
-				if (sBuffer[(j-1) * nScreenWidth + i].Attributes != sBuffer[(j+1) * nScreenWidth + i].Attributes) {
+			for (int j = nScreenHeight - 2; j > 0; j--) {
+				if (sBuffer[(j - 1) * nScreenWidth + i].Attributes != sBuffer[(j + 1) * nScreenWidth + i].Attributes) {
 					sBuffer[(j + 1) * nScreenWidth + i].Attributes = sBuffer[j * nScreenWidth + i].Attributes;
 					sBuffer[j * nScreenWidth + i].Attributes = sBuffer[(j - 1) * nScreenWidth + i].Attributes;
 				}
@@ -85,22 +97,27 @@ int main() {
 					arrLength[i] = nLength();
 				}
 			}
-			arrOffset[i]++;
+			arrOffset[i] += 1;
 		}
 
 
-		//CHANGE OUTPUT BUFFER AND MAKING IT 1 FRAME PER SECOND
+		//CHANGE OUTPUT BUFFER AND MAKING IT 0.5 FRAME PER SECOND
 		WriteConsoleOutput(hHandle, sBuffer, { (SHORT)nScreenWidth, (SHORT)nScreenHeight }, { 0,0 }, &sRect);
-		this_thread::sleep_for(chrono::milliseconds(500));
+		this_thread::sleep_for(chrono::milliseconds(100));
 	}
-
-	(void)getchar();
 
 
 	//CLOSING AND DELETING HANDLE AND ALLOCATED MEMORY
-	CloseHandle(hHandle);
+
 	delete[] sBuffer;
 	delete[] arrOffset;
 	delete[] arrLength;
+	return 0;
+}
+
+int main() {
+	while (true) {
+		terminal();
+	}
 	return 0;
 }
