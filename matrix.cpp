@@ -70,7 +70,7 @@ int terminal() {
 	//MAKING STING "PRESS Q TO QUIT...." FOR BOTTOM OF SCREEN
 	wchar_t lastLine[20] = L"Press q to quit...";
 
-	for (int i = 0; i < 20; i++) {
+	for (int i = 0; i < ((nScreenWidth >= 18) ? 18 : nScreenWidth); i++) {
 		sBuffer[(nScreenHeight - 1) * nScreenWidth + i].Char.UnicodeChar = lastLine[i];
 		sBuffer[(nScreenHeight - 1) * nScreenWidth + i].Attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
 	}
