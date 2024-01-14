@@ -8,7 +8,7 @@
 
 int nScreenWidth = 80;
 int nScreenHeight = 80;
-int MAX_OFFSET = 30;
+int MAX_OFFSET = 50;
 int MAX_LENGTH = 10;
 
 using namespace std;
@@ -67,10 +67,19 @@ int terminal() {
 	//CREATING RECT FOR CONSOLE OUTPUT
 	SMALL_RECT sRect = { 0, 0, (SHORT)nScreenWidth, (SHORT)nScreenHeight };
 
+	//MAKING STING "PRESS Q TO QUIT...." FOR BOTTOM OF SCREEN
+	wchar_t lastLine[20] = L"Press q to quit...";
+
+	for (int i = 0; i < 20; i++) {
+		sBuffer[(nScreenHeight - 1) * nScreenWidth + i].Char.UnicodeChar = lastLine[i];
+		sBuffer[(nScreenHeight - 1) * nScreenWidth + i].Attributes = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
+	}
+
 	srand((unsigned int)time(0)); //SETS SEED SO THAT WE DON'T GET SAME RANDOM VALUE
 
 	bool qConsole = false;
 	while (!qConsole) {
+
 		//CHECKS IF CONSOLE SIZE HAS BEEN CHANGED
 		GetConsoleScreenBufferInfo(hHandle, &sBufferInfo);
 		if (sBufferInfo.dwSize.X != nScreenWidth || sBufferInfo.dwSize.Y != nScreenHeight) {
@@ -79,11 +88,12 @@ int terminal() {
 
 		//CHECKS IF THE UPPER AND LOWER CELL ARE SAME AND PROPOGATES COLOUR
 		for (int i = 0; i < nScreenWidth; i++) {
-			for (int j = nScreenHeight - 2; j > 0; j--) {
+			for (int j = nScreenHeight - 3; j > 0; j--) {
 				if (sBuffer[(j - 1) * nScreenWidth + i].Attributes != sBuffer[(j + 1) * nScreenWidth + i].Attributes) {
 					sBuffer[(j + 1) * nScreenWidth + i].Attributes = sBuffer[j * nScreenWidth + i].Attributes;
 					sBuffer[j * nScreenWidth + i].Attributes = sBuffer[(j - 1) * nScreenWidth + i].Attributes;
 				}
+				
 			}
 		}
 
@@ -104,6 +114,10 @@ int terminal() {
 		//CHANGE OUTPUT BUFFER AND MAKING IT 0.5 FRAME PER SECOND
 		WriteConsoleOutput(hHandle, sBuffer, { (SHORT)nScreenWidth, (SHORT)nScreenHeight }, { 0,0 }, &sRect);
 		this_thread::sleep_for(chrono::milliseconds(100));
+
+		if (GetKeyState('Q') & 0x8000) {
+			qConsole = true;
+		}
 	}
 
 
@@ -116,8 +130,13 @@ int terminal() {
 }
 
 int main() {
-	while (true) {
+	bool quit = true;
+	while (quit) {
 		terminal();
+
+		if (GetKeyState('Q') & 0x8000) {
+			quit = false;
+		}
 	}
 	return 0;
 }
